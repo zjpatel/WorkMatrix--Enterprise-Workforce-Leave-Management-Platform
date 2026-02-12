@@ -1,0 +1,85 @@
+<div class="apply-leave-container">
+  <div class="page-header">
+    <h1>
+      <svg class="icon icon-md" viewBox="0 0 24 24">
+        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+        <polyline points="14 2 14 8 20 8"></polyline>
+        <line x1="8" y1="13" x2="16" y2="13"></line>
+        <line x1="8" y1="17" x2="16" y2="17"></line>
+      </svg>
+      Apply for Leave
+    </h1>
+    <p>Submit your leave application</p>
+  </div>
+
+  <div class="form-card">
+    <form [formGroup]="applyLeaveForm" (ngSubmit)="onSubmit()">
+      
+      <!-- Leave Type -->
+      <div class="form-group">
+        <label for="leaveType">Leave Type <span class="required">*</span></label>
+        <select id="leaveType" formControlName="leaveType" class="form-control">
+          <option value="">-- Select Leave Type --</option>
+          <option *ngFor="let type of leaveTypes" [value]="type">
+            {{ type.replace('_', ' ') }}
+          </option>
+        </select>
+        <div class="error-message" *ngIf="applyLeaveForm.get('leaveType')?.touched && applyLeaveForm.get('leaveType')?.invalid">
+          Leave type is required
+        </div>
+      </div>
+
+      <!-- Start Date -->
+      <div class="form-group">
+        <label for="startDate">Start Date <span class="required">*</span></label>
+        <input type="date" id="startDate" formControlName="startDate" class="form-control">
+        <div class="error-message" *ngIf="applyLeaveForm.get('startDate')?.touched && applyLeaveForm.get('startDate')?.invalid">
+          Start date is required
+        </div>
+      </div>
+
+      <!-- End Date -->
+      <div class="form-group">
+        <label for="endDate">End Date <span class="required">*</span></label>
+        <input type="date" id="endDate" formControlName="endDate" class="form-control">
+        <div class="error-message" *ngIf="applyLeaveForm.get('endDate')?.touched && applyLeaveForm.get('endDate')?.invalid">
+          End date is required
+        </div>
+        <div class="error-message" *ngIf="applyLeaveForm.errors?.['dateRangeInvalid'] && applyLeaveForm.get('endDate')?.touched">
+          End date must be greater than or equal to start date
+        </div>
+      </div>
+
+      <!-- Reason -->
+      <div class="form-group">
+        <label for="reason">Reason <span class="required">*</span></label>
+        <textarea id="reason" formControlName="reason" rows="4" class="form-control" placeholder="Enter reason for leave (minimum 10 characters)"></textarea>
+        <div class="error-message" *ngIf="applyLeaveForm.get('reason')?.touched && applyLeaveForm.get('reason')?.invalid">
+          Reason is required (minimum 10 characters)
+        </div>
+      </div>
+
+      <!-- Error Message -->
+      <div class="alert alert-error" *ngIf="errorMessage">
+        {{ errorMessage }}
+      </div>
+
+      <!-- Success Message -->
+      <div class="alert alert-success" *ngIf="successMessage">
+        {{ successMessage }}
+      </div>
+
+      <!-- Buttons -->
+      <div class="form-actions">
+        <button type="submit" class="btn btn-primary" [disabled]="loading || applyLeaveForm.invalid">
+          <span *ngIf="!loading">Submit Application</span>
+          <span *ngIf="loading">Submitting...</span>
+        </button>
+        <button type="button" class="btn btn-secondary" (click)="onReset()" [disabled]="loading">
+          Reset
+        </button>
+        <a routerLink="/leave/my-leaves" class="btn btn-outline">View My Leaves</a>
+      </div>
+    </form>
+  </div>
+</div>

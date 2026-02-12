@@ -1,0 +1,222 @@
+<div class="employee-list-container">
+  <!-- Header -->
+  <header class="page-header">
+    <div class="header-content">
+      <div>
+        <h1 class="page-title">Employees</h1>
+        <p class="page-subtitle">Manage your team members</p>
+      </div>
+
+      <div class="header-actions">
+
+        <!-- Status Filter (ADMIN only) -->
+        <div *ngIf="authApi.isAdmin()" class="filter-box">
+          <label class="filter-label">Status:</label>
+          <select
+            [(ngModel)]="statusFilter"
+            (change)="onStatusFilterChange(statusFilter)"
+            class="filter-select">
+            <option *ngFor="let status of statusOptions" [value]="status">
+              {{ status === 'ALL' ? 'All Employees' : status }}
+            </option>
+          </select>
+        </div>
+
+        <!-- Search -->
+        <div class="search-box">
+          <span class="search-icon">
+            <svg class="icon icon-sm" viewBox="0 0 24 24">
+              <circle cx="11" cy="11" r="8"></circle>
+              <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+            </svg>
+          </span>
+          <input
+            type="text"
+            placeholder="Search by name or email..."
+            [(ngModel)]="searchTerm"
+            (input)="onSearch(searchTerm)"
+            class="search-input" />
+        </div>
+
+        <!-- Add Button -->
+        <button
+          *ngIf="authApi.isAdmin()"
+          (click)="createEmployee()"
+          class="btn-primary">
+          <svg class="icon icon-sm" viewBox="0 0 24 24">
+            <line x1="12" y1="5" x2="12" y2="19"></line>
+            <line x1="5" y1="12" x2="19" y2="12"></line>
+          </svg>
+          Add Employee
+        </button>
+
+      </div>
+    </div>
+  </header>
+
+  <!-- Error -->
+  <div *ngIf="error" class="error-banner">
+    {{ error }}
+  </div>
+
+  <!-- Loading -->
+  <div *ngIf="loading" class="loading-state">
+    <div class="spinner"></div>
+    <p>Loading employees...</p>
+  </div>
+
+  <!-- Table -->
+  <div *ngIf="!loading" class="table-container">
+
+    <div *ngIf="employees.length === 0" class="empty-state">
+      <div class="empty-icon">
+        <svg class="icon icon-lg" viewBox="0 0 24 24">
+          <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+          <circle cx="9" cy="7" r="4"></circle>
+          <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+          <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+        </svg>
+      </div>
+      <h2>No employees found</h2>
+    </div>
+
+    <table *ngIf="employees.length > 0" class="employees-table">
+      <thead>
+        <tr>
+          <th>Employee</th>
+          <th>Email</th>
+          <th>Department</th>
+          <th>Age</th>
+          <th>Gender</th>
+          <th>Status</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+
+      <tbody>
+        <tr *ngFor="let emp of employees; trackBy: trackByEmployee">
+
+          <!-- Employee -->
+          <td class="employee-cell">
+            <div class="employee-info">
+              <div
+                class="avatar"
+                [style.background]="getStatusColor(emp.status)">
+                {{ getInitials(emp.name) }}
+              </div>
+              <span class="emp-name">{{ emp.name }}</span>
+            </div>
+          </td>
+
+          <!-- Email -->
+          <td class="email-cell">{{ emp.email }}</td>
+
+          <!-- Department (STATIC) -->
+          <td>
+            {{ emp.department || '—' }}
+          </td>
+
+          <!-- Age -->
+          <td>{{ emp.age ?? '—' }}</td>
+
+          <!-- Gender -->
+          <td>{{ emp.gender ?? '—' }}</td>
+
+          <!-- Status (STATIC) -->
+          <td>
+            <span
+              class="status-badge"
+              [ngClass]="'status-' + (emp.status || 'PENDING').toLowerCase()">
+              {{ emp.status || 'PENDING' }}
+            </span>
+          </td>
+
+          <!-- Actions -->
+          <td class="actions-cell">
+            <div class="action-buttons">
+              <button
+                (click)="viewEmployee(emp)"
+                class="btn-icon"
+                title="View">
+                <svg class="icon icon-sm" viewBox="0 0 24 24">
+                  <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                  <circle cx="12" cy="12" r="3"></circle>
+                </svg>
+              </button>
+
+              <button
+                *ngIf="authApi.isAdmin()"
+                (click)="editEmployee(emp.userId)"
+                class="btn-icon"
+                title="Edit">
+                <svg class="icon icon-sm" viewBox="0 0 24 24">
+                  <path d="M12 20h9"></path>
+                  <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5z"></path>
+                </svg>
+              </button>
+
+              <button
+                *ngIf="authApi.isAdmin()"
+                (click)="deleteEmployee(emp)"
+                class="btn-icon btn-danger-icon"
+                title="Delete">
+                <svg class="icon icon-sm" viewBox="0 0 24 24">
+                  <polyline points="3 6 5 6 21 6"></polyline>
+                  <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"></path>
+                  <path d="M10 11v6"></path>
+                  <path d="M14 11v6"></path>
+                  <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"></path>
+                </svg>
+              </button>
+            </div>
+          </td>
+
+        </tr>
+      </tbody>
+    </table>
+
+    <!-- Pagination -->
+    <div *ngIf="employees.length > 0" class="pagination-container">
+      <div class="pagination-info">
+        Showing {{ (currentPage * pageSize) + 1 }} to {{ Math.min((currentPage + 1) * pageSize, totalElements) }} of {{ totalElements }} entries
+      </div>
+      
+      <div class="pagination-controls">
+        <button (click)="previousPage()" [disabled]="currentPage === 0" class="pagination-btn">
+          ← Previous
+        </button>
+        
+        <div class="pagination-pages">
+          <button 
+            *ngFor="let page of getPageNumbers()" 
+            (click)="goToPage(page)" 
+            [class.active]="page === currentPage"
+            class="pagination-page">
+            {{ page + 1 }}
+          </button>
+        </div>
+        
+        <button (click)="nextPage()" [disabled]="currentPage >= totalPages - 1" class="pagination-btn">
+          Next →
+        </button>
+      </div>
+      
+      <div class="pagination-size">
+        <label>Items per page:</label>
+        <select [(ngModel)]="pageSize" (change)="onPageSizeChange()" class="page-size-select">
+          <option *ngFor="let size of pageSizeOptions" [value]="size">{{ size }}</option>
+        </select>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- View Modal -->
+<app-employee-view-modal
+  *ngIf="showViewModal"
+  [employee]="selectedEmployee"
+  [isAdmin]="authApi.isAdmin()"
+  (close)="closeViewModal()"
+  (edit)="editEmployee($event)"
+  (delete)="deleteEmployee($event)">
+</app-employee-view-modal>

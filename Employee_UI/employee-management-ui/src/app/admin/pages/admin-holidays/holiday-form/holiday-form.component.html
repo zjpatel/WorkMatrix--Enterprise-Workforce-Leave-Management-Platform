@@ -1,0 +1,86 @@
+<div class="form-card">
+  <div class="form-header">
+    <h2>{{ getFormTitle() }}</h2>
+    <button type="button" (click)="onCancel()" class="close-btn">✕</button>
+  </div>
+
+  <!-- Error Message -->
+  <div *ngIf="error || errorMessages.length" class="error-banner">
+    <span *ngIf="error && !errorMessages.length">{{ error }}</span>
+    <ul *ngIf="errorMessages.length" class="error-list">
+      <li *ngFor="let msg of errorMessages">{{ msg }}</li>
+    </ul>
+  </div>
+
+  <form [formGroup]="form" (ngSubmit)="onSubmit()" class="holiday-form">
+
+    <!-- Holiday Name -->
+    <div class="form-group">
+      <label>Holiday Name *</label>
+      <input
+        type="text"
+        formControlName="holidayName"
+        placeholder="e.g., New Year, Diwali"
+        class="form-input"
+        required
+      />
+      <small *ngIf="form.get('holidayName')?.invalid && form.get('holidayName')?.touched" class="error-text">
+        Holiday name is required (min 2 characters)
+      </small>
+    </div>
+
+    <!-- Holiday Date -->
+    <div class="form-group">
+      <label>Holiday Date *</label>
+      <input
+        type="date"
+        formControlName="holidayDate"
+        [min]="getTodayDate()"
+        class="form-input"
+        required
+      />
+      <small *ngIf="form.get('holidayDate')?.invalid && form.get('holidayDate')?.touched" class="error-text">
+        Holiday date is required
+      </small>
+    </div>
+
+    <!-- Holiday Type -->
+    <div class="form-group">
+      <label>Holiday Type *</label>
+      <select formControlName="holidayType" class="form-input" required>
+        <option *ngFor="let type of holidayTypes" [value]="type">
+          {{ type }}
+        </option>
+      </select>
+    </div>
+
+    <!-- Optional Checkbox -->
+    <div class="form-group checkbox-group">
+      <label>
+        <input type="checkbox" formControlName="optional" />
+        <span>Optional Holiday (employees can choose to work)</span>
+      </label>
+    </div>
+
+    <!-- Description -->
+    <div class="form-group">
+      <label>Description (Optional)</label>
+      <textarea
+        formControlName="description"
+        placeholder="Add notes about this holiday..."
+        rows="3"
+        class="form-textarea">
+      </textarea>
+    </div>
+
+    <!-- Form Actions -->
+    <div class="form-actions">
+      <button type="button" (click)="onCancel()" class="btn-secondary">
+        Cancel
+      </button>
+      <button type="submit" [disabled]="!form.valid || loading" class="btn-primary">
+        {{ getSubmitButtonText() }}
+      </button>
+    </div>
+  </form>
+</div>

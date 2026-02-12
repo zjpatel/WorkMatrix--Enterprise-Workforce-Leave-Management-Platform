@@ -1,0 +1,148 @@
+<div class="pending-leaves-container">
+  <div class="page-header">
+    <h1>
+      <svg class="icon icon-md" viewBox="0 0 24 24">
+        <circle cx="12" cy="12" r="10"></circle>
+        <polyline points="12 6 12 12 16 14"></polyline>
+      </svg>
+      Pending Leave Requests
+    </h1>
+    <button class="btn btn-secondary" (click)="loadPendingLeaves()" [disabled]="loading">
+      <svg class="icon icon-sm" viewBox="0 0 24 24">
+        <polyline points="23 4 23 10 17 10"></polyline>
+        <polyline points="1 20 1 14 7 14"></polyline>
+        <path d="M3.51 9a9 9 0 0 1 14.13-3.36L23 10"></path>
+        <path d="M20.49 15a9 9 0 0 1-14.13 3.36L1 14"></path>
+      </svg>
+      Refresh
+    </button>
+  </div>
+
+  <!-- Success Message -->
+  <div class="alert alert-success" *ngIf="successMessage">
+    {{ successMessage }}
+  </div>
+
+  <!-- Error Message -->
+  <div class="alert alert-error" *ngIf="errorMessage && !loading">
+    {{ errorMessage }}
+  </div>
+
+  <!-- Loading State -->
+  <div class="loading-container" *ngIf="loading">
+    <div class="spinner"></div>
+    <p>Loading pending leaves...</p>
+  </div>
+
+  <!-- Leaves Table -->
+  <div class="table-card" *ngIf="!loading">
+    <div class="table-responsive" *ngIf="pendingLeaves.length > 0">
+      <table class="leaves-table">
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Employee Name</th>
+            <th>Emp ID</th>
+            <th>Leave Type</th>
+            <th>Start Date</th>
+            <th>End Date</th>
+            <th>Total Days</th>
+            <th>Reason</th>
+            <th>Applied At</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let leave of pendingLeaves">
+            <td>{{ leave.leaveId }}</td>
+            <td>
+              <div class="employee-info">
+                <strong>{{ leave.employeeName }}</strong>
+              </div>
+            </td>
+            <td>{{ leave.empId }}</td>
+            <td>{{ leave.leaveType.replace('_', ' ') }}</td>
+            <td>{{ formatDate(leave.startDate) }}</td>
+            <td>{{ formatDate(leave.endDate) }}</td>
+            <td>
+              <div class="days-info">
+                <span class="total-days">{{ leave.totalDays }} total</span>
+                <span class="paid-days">(P: {{ leave.paidDays }}, U: {{ leave.unpaidDays }})</span>
+              </div>
+            </td>
+            <td>
+              <div class="reason-cell" [title]="leave.reason">
+                {{ leave.reason }}
+              </div>
+            </td>
+            <td>{{ formatDate(leave.appliedAt) }}</td>
+            <td>
+              <div class="action-buttons">
+                <button 
+                  class="btn-approve" 
+                  (click)="openConfirmModal(leave, 'approve')"
+                  title="Approve this leave">
+                  <svg class="icon icon-sm" viewBox="0 0 24 24">
+                    <polyline points="20 6 9 17 4 12"></polyline>
+                  </svg>
+                  Approve
+                </button>
+                <button 
+                  class="btn-reject" 
+                  (click)="openConfirmModal(leave, 'reject')"
+                  title="Reject this leave">
+                  <svg class="icon icon-sm" viewBox="0 0 24 24">
+                    <line x1="18" y1="6" x2="6" y2="18"></line>
+                    <line x1="6" y1="6" x2="18" y2="18"></line>
+                  </svg>
+                  Reject
+                </button>
+              </div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Empty State -->
+    <div class="empty-state" *ngIf="pendingLeaves.length === 0">
+      <div class="empty-icon">✅</div>
+      <h3>No Pending Leaves</h3>
+      <p>All leave requests have been processed.</p>
+    </div>
+  </div>
+</div>
+
+<!-- Confirmation Modal -->
+<div class="modal-overlay" *ngIf="showConfirmModal" (click)="closeConfirmModal()">
+  <div class="modal-content" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <h2>{{ confirmAction === 'approve' ? '✅ Approve Leave' : '❌ Reject Leave' }}</h2>
+    </div>
+    <div class="modal-body">
+      <p><strong>Are you sure you want to {{ confirmAction }} this leave request?</strong></p>
+      <div class="leave-details" *ngIf="selectedLeave">
+        <p><strong>Employee:</strong> {{ selectedLeave.employeeName }}</p>
+        <p><strong>Leave Type:</strong> {{ selectedLeave.leaveType.replace('_', ' ') }}</p>
+        <p><strong>Duration:</strong> {{ formatDate(selectedLeave.startDate) }} to {{ formatDate(selectedLeave.endDate) }}</p>
+        <p><strong>Total Days:</strong> {{ selectedLeave.totalDays }}</p>
+        <p><strong>Reason:</strong> {{ selectedLeave.reason }}</p>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button 
+        class="btn btn-primary" 
+        (click)="confirmActionHandler()" 
+        [disabled]="processingAction">
+        <span *ngIf="!processingAction">Yes, {{ confirmAction }}</span>
+        <span *ngIf="processingAction">Processing...</span>
+      </button>
+      <button 
+        class="btn btn-secondary" 
+        (click)="closeConfirmModal()" 
+        [disabled]="processingAction">
+        Cancel
+      </button>
+    </div>
+  </div>
+</div>

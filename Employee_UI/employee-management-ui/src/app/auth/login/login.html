@@ -1,0 +1,53 @@
+<div class="login-container">
+  <div class="login-card">
+    <div class="login-header">
+      <h1>Welcome Back</h1>
+      <p>Sign in to your account</p>
+    </div>
+
+    <form [formGroup]="form" (ngSubmit)="login()" class="login-form">
+      <!-- Error Alert -->
+      <div *ngIf="error || errorMessages.length" class="error-alert">
+        <span *ngIf="error && !errorMessages.length">{{ error }}</span>
+        <ul *ngIf="errorMessages.length" class="error-list">
+          <li *ngFor="let msg of errorMessages">{{ msg }}</li>
+        </ul>
+      </div>
+
+      <!-- Email Field -->
+      <div class="form-group">
+        <label>Email Address</label>
+          <input
+            type="email"
+            placeholder="you@example.com"
+            formControlName="email"
+            required
+            class="form-input"
+          />
+      </div>
+
+      <!-- Password Field -->
+      <div class="form-group">
+        <label>Password</label>
+          <input
+            type="password"
+            placeholder="Enter your password"
+            formControlName="password"
+            required
+            class="form-input"
+          />
+      </div>
+
+      <!-- Submit Button -->
+      <button type="submit" [disabled]="loading" class="btn-primary">
+        {{ loading ? 'Signing in...' : 'Sign In' }}
+      </button>
+    </form>
+
+    <!-- Register Link -->
+    <p class="register-link">
+      Don't have an account?
+      <a routerLink="/register">Create one</a>
+    </p>
+  </div>
+</div>

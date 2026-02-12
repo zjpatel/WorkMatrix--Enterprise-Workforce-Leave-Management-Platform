@@ -1,0 +1,247 @@
+<div class="create-container">
+  <!-- Header -->
+  <header class="page-header">
+    <div>
+      <h1 class="page-title">
+        {{ isEdit ? '✏️ Edit Employee' : '➕ Create Employee' }}
+      </h1>
+      <p class="page-subtitle">
+        {{ isEdit ? 'Update employee information' : 'Add a new team member' }}
+      </p>
+    </div>
+  </header>
+
+  <!-- Error Message -->
+  <div *ngIf="error || errorMessages.length" class="error-banner">
+    <span *ngIf="error && !errorMessages.length">{{ error }}</span>
+    <ul *ngIf="errorMessages.length" class="error-list">
+      <li *ngFor="let msg of errorMessages">{{ msg }}</li>
+    </ul>
+  </div>
+
+  <!-- Success Message -->
+  <div *ngIf="success" class="success-banner">
+    {{ success }}
+  </div>
+
+  <form (ngSubmit)="submit()" class="employee-form">
+
+    <!-- ================= FORM SECTIONS ================= -->
+    <div class="form-sections">
+
+      <!-- ================= LEFT COLUMN ================= -->
+      <div class="form-section">
+        <h2 class="section-title">Personal Information</h2>
+
+        <!-- Name -->
+        <div class="form-group">
+          <label>Full Name *</label>
+          <input
+            type="text"
+            [(ngModel)]="form.name"
+            name="name"
+            placeholder="John Doe"
+            required
+            class="form-input"
+          />
+        </div>
+
+        <!-- Email -->
+        <div class="form-group">
+          <label>Email Address *</label>
+          <input
+            type="email"
+            [(ngModel)]="form.email"
+            name="email"
+            placeholder="john@example.com"
+            required
+            class="form-input"
+            [disabled]="isEdit"
+          />
+          <small *ngIf="isEdit" class="form-hint">
+            Email cannot be changed
+          </small>
+        </div>
+
+        <!-- Age -->
+        <div class="form-group">
+          <label>Age *</label>
+          <input
+            type="number"
+            [(ngModel)]="form.age"
+            name="age"
+            placeholder="25"
+            min="18"
+            max="120"
+            required
+            class="form-input"
+          />
+        </div>
+
+        <!-- Gender -->
+        <div class="form-group">
+          <label>Gender *</label>
+          <select
+            [(ngModel)]="form.gender"
+            name="gender"
+            required
+            class="form-input"
+          >
+            <option [ngValue]="null">Select gender</option>
+            <option [ngValue]="'Male'">Male</option>
+            <option [ngValue]="'Female'">Female</option>
+            <option [ngValue]="'Other'">Other</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- ================= RIGHT COLUMN ================= -->
+      <div class="form-section">
+
+        <!-- ================= ADMIN SECTION ================= -->
+        <div *ngIf="authApi.isAdmin()">
+          <h2 class="section-title">Organization</h2>
+
+          <!-- Department -->
+          <div class="form-group">
+            <label>Department</label>
+           <select
+  [(ngModel)]="form.deptId"
+  name="deptId"
+  class="form-input"
+  [disabled]="form.status !== 'APPROVED'">
+
+  <option [ngValue]="null">Select department</option>
+  <option *ngFor="let dept of departments" [ngValue]="dept.deptId">
+    {{ dept.deptName }}
+  </option>
+</select>
+
+          </div>
+
+          <!-- Status -->
+          <div class="form-group">
+            <label>Status *</label>
+            <select
+              [(ngModel)]="form.status"
+              name="status"
+              required
+              class="form-input"
+            >
+              <option *ngFor="let status of statusOptions" [value]="status">
+                {{ status }}
+              </option>
+            </select>
+          </div>
+        </div>
+
+        <!-- ================= EMPLOYEE VIEW ================= -->
+        <div *ngIf="!authApi.isAdmin() && isEdit && profile">
+          <h2 class="section-title">Organization</h2>
+
+          <div class="form-group">
+            <label>Department</label>
+            <div class="form-input-static">
+              {{ profile.department || '—' }}
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label>Status</label>
+            <div class="form-input-static">
+              <span
+                class="status-badge"
+                [ngClass]="'status-' + profile.status?.toLowerCase()"
+              >
+                {{ profile.status }}
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <!-- ================= IMAGES ================= -->
+        <h2 class="section-title">Profile Images</h2>
+
+        <div class="file-input-wrapper">
+          <input
+            type="file"
+            multiple
+            accept="image/*"
+            (change)="onImageChange($event)"
+            class="file-input"
+            id="images"
+          />
+          <label for="images" class="file-label">
+            <span>
+              <svg class="icon icon-sm" viewBox="0 0 24 24">
+                <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h3l2-3h8l2 3h3a2 2 0 0 1 2 2z"></path>
+                <circle cx="12" cy="13" r="4"></circle>
+              </svg>
+              Click to add images
+            </span>
+          </label>
+        </div>
+        <p class="form-hint">Images are uploaded after approval and once an employee ID exists.</p>
+
+        <!-- New Image Previews -->
+        <div *ngIf="imagePreviews.length > 0" class="image-grid">
+          <div
+            *ngFor="let preview of imagePreviews; let i = index; trackBy: trackByIndex"
+            class="image-card"
+          >
+            <img [src]="preview" [alt]="'Preview ' + (i + 1)" />
+            <button
+              type="button"
+              (click)="removeNewImage(i)"
+              class="remove-btn"
+            >
+              ✕
+            </button>
+          </div>
+        </div>
+
+        <!-- Existing Images -->
+        <div *ngIf="isEdit && existingImages.length > 0" class="existing-images">
+          <h3 class="images-title">Current Images</h3>
+          <div class="image-grid">
+            <div *ngFor="let img of existingImages; trackBy: trackByImage" class="image-card">
+              <img 
+                [src]="getImageUrl(img.fileName)" 
+                [alt]="img.fileName" 
+                loading="lazy" />
+              <button
+                type="button"
+                (click)="removeExistingImage(img)"
+                class="remove-btn"
+              >
+                ✕
+              </button>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- ================= ACTIONS ================= -->
+    <div class="form-actions">
+      <button
+        type="button"
+        (click)="router.navigate(['/employees'])"
+        class="btn-secondary"
+      >
+        Cancel
+      </button>
+
+      <button type="submit" [disabled]="loading" class="btn-primary">
+        <svg class="icon icon-sm" viewBox="0 0 24 24">
+          <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
+          <polyline points="17 21 17 13 7 13 7 21"></polyline>
+          <polyline points="7 3 7 8 15 8"></polyline>
+        </svg>
+        {{ loading ? 'Saving...' : (isEdit ? 'Update' : 'Create') }}
+      </button>
+    </div>
+
+  </form>
+</div>

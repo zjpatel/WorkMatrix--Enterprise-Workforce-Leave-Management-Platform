@@ -1,0 +1,572 @@
+<div class="leave-management-container">
+  <!-- Header -->
+  <div class="page-header">
+    <div>
+      <h1>
+        <svg class="icon icon-lg" viewBox="0 0 24 24">
+          <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+          <line x1="16" y1="2" x2="16" y2="6"></line>
+          <line x1="8" y1="2" x2="8" y2="6"></line>
+          <line x1="3" y1="10" x2="21" y2="10"></line>
+        </svg>
+        Leave Management
+      </h1>
+    </div>
+    <!-- Admin refresh button removed per request; auto-refresh via service and filters -->
+  </div>
+
+  <!-- Global Messages -->
+  <div class="alert alert-success" *ngIf="successMessage">
+    ✅ {{ successMessage }}
+  </div>
+
+  <div class="alert alert-error" *ngIf="errorMessage">
+    ❌ {{ errorMessage }}
+  </div>
+
+  <!-- ========================================== -->
+  <!-- EMPLOYEE SECTION -->
+  <!-- ========================================== -->
+
+  <!-- Apply Leave Form -->
+  <div class="section-card" *ngIf="!isAdmin">
+    <h2>
+      <svg class="icon icon-md" viewBox="0 0 24 24">
+        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+        <polyline points="14 2 14 8 20 8"></polyline>
+        <line x1="8" y1="13" x2="16" y2="13"></line>
+        <line x1="8" y1="17" x2="16" y2="17"></line>
+      </svg>
+      Apply for Leave
+    </h2>
+    <form [formGroup]="applyLeaveForm" (ngSubmit)="onApplyLeave()" class="apply-form apply-card">
+      <div class="form-row">
+        <div class="form-group">
+          <label for="applyLeaveType">Leave Type <span class="required">*</span></label>
+          <select id="applyLeaveType" formControlName="leaveType" class="form-control">
+            <option value="">-- Select Type --</option>
+            <option *ngFor="let type of leaveTypes" [value]="type">{{ type }}</option>
+          </select>
+          <div class="error-text" *ngIf="applyLeaveForm.get('leaveType')?.touched && applyLeaveForm.get('leaveType')?.invalid">
+            Leave type is required
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="applyStartDate">Start Date <span class="required">*</span></label>
+          <input type="date" id="applyStartDate" formControlName="startDate" class="form-control">
+          <div class="error-text" *ngIf="applyLeaveForm.get('startDate')?.touched && applyLeaveForm.get('startDate')?.invalid">
+            Start date is required
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="applyEndDate">End Date <span class="required">*</span></label>
+          <input type="date" id="applyEndDate" formControlName="endDate" class="form-control">
+          <div class="error-text" *ngIf="applyLeaveForm.get('endDate')?.touched && applyLeaveForm.get('endDate')?.invalid">
+            End date is required
+          </div>
+          <div class="error-text" *ngIf="applyLeaveForm.errors?.['dateRangeInvalid'] && applyLeaveForm.get('endDate')?.touched">
+            End date must be ≥ start date
+          </div>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label for="applyReason">Reason <span class="required">*</span></label>
+        <textarea id="applyReason" formControlName="reason" rows="3" class="form-control" placeholder="Enter reason (minimum 10 characters)"></textarea>
+        <div class="error-text" *ngIf="applyLeaveForm.get('reason')?.touched && applyLeaveForm.get('reason')?.invalid">
+          Reason is required (min 10 characters)
+        </div>
+      </div>
+
+      <button type="submit" class="btn btn-primary" [disabled]="submittingLeave || applyLeaveForm.invalid">
+        <span *ngIf="!submittingLeave">Submit Application</span>
+        <span *ngIf="submittingLeave">⏳ Submitting...</span>
+      </button>
+    </form>
+  </div>
+
+  <!-- My Leaves -->
+  <div class="section-card" *ngIf="!isAdmin">
+    <h2>
+      <svg class="icon icon-md" viewBox="0 0 24 24">
+        <line x1="8" y1="6" x2="21" y2="6"></line>
+        <line x1="8" y1="12" x2="21" y2="12"></line>
+        <line x1="8" y1="18" x2="21" y2="18"></line>
+        <line x1="3" y1="6" x2="3.01" y2="6"></line>
+        <line x1="3" y1="12" x2="3.01" y2="12"></line>
+        <line x1="3" y1="18" x2="3.01" y2="18"></line>
+      </svg>
+      My Leaves
+    </h2>
+    
+    <!-- Usage Summary Graph -->
+    <div class="section-subheader" *ngIf="!loadingMyLeaves">
+      <h3 style="display:flex;align-items:center;gap:8px;margin:12px 0 8px 0;">
+        <svg class="icon icon-md" viewBox="0 0 24 24">
+          <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+          <line x1="3" y1="9" x2="21" y2="9"></line>
+        </svg>
+        Leave Usage Summary ({{ selectedYear }})
+      </h3>
+      <div class="usage-grid">
+        <div *ngFor="let s of employeeUsageSummary" class="usage-card">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+            <strong>{{ s.type }}</strong>
+            <small>{{ s.used }} / {{ s.allowed }} used</small>
+          </div>
+          <div class="progress">
+            <div class="progress-used" [style.width.%]="s.percent"></div>
+          </div>
+          <small style="display:block;margin-top:6px;">Remaining: {{ s.remaining }}</small>
+        </div>
+      </div>
+    </div>
+
+    <div class="loading-state" *ngIf="loadingMyLeaves">
+      <div class="spinner"></div>
+      <p>Loading your leaves...</p>
+    </div>
+
+    <div *ngIf="!loadingMyLeaves && filteredMyLeaves.length === 0" class="empty-state">
+      <div class="empty-icon">
+        <svg class="icon icon-lg" viewBox="0 0 24 24">
+          <path d="M22 12H2"></path>
+          <path d="M5 12l3 3-3 3"></path>
+          <rect x="3" y="4" width="18" height="16" rx="2" ry="2"></rect>
+        </svg>
+      </div>
+      <p>No leave applications yet</p>
+    </div>
+
+    <div class="table-responsive" *ngIf="!loadingMyLeaves && filteredMyLeaves.length > 0">
+      <!-- Employee Filters placed above list -->
+      <form [formGroup]="filterForm" class="filter-group filter-sticky" style="display:flex;flex-wrap:wrap;gap:12px;align-items:center;justify-content:center;margin:12px 0 20px 0;">
+        <label for="empStatusFilter">Status:</label>
+        <select id="empStatusFilter" formControlName="status" class="form-control-small">
+          <option *ngFor="let status of employeeStatusOptions" [value]="status">{{ status }}</option>
+        </select>
+
+        <label for="empTypeFilter">Type:</label>
+        <select id="empTypeFilter" formControlName="leaveType" class="form-control-small">
+          <option [ngValue]="undefined">All</option>
+          <option *ngFor="let type of leaveTypes" [value]="type">{{ type }}</option>
+        </select>
+
+        <label for="empYearFilter">Year:</label>
+        <input id="empYearFilter" type="number" formControlName="year" class="form-control-small" style="width:90px;" />
+
+        <label for="empFromDate">From:</label>
+        <input id="empFromDate" type="date" formControlName="fromDate" class="form-control-small" />
+
+        <label for="empToDate">To:</label>
+        <input id="empToDate" type="date" formControlName="toDate" class="form-control-small" />
+
+        <button type="button" class="btn-small btn-secondary" style="margin-left:8px;" (click)="filterForm.reset({status:'ALL', leaveType: undefined, year: currentYear, fromDate: undefined, toDate: undefined})">Clear Filters</button>
+      </form>
+
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Leave Type</th>
+            <th>Dates</th>
+            <th>Total Days</th>
+            <th>Status</th>
+            <th>Reason</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+            <tr *ngFor="let leave of filteredMyLeaves; trackBy: trackByLeaveId">
+            <td>{{ leave.leaveType }}</td>
+            <td>
+              <div class="date-range">
+                {{ formatDate(leave.startDate) }} <br>
+                <small>to {{ formatDate(leave.endDate) }}</small>
+              </div>
+            </td>
+            <td>
+              <div class="days-info">
+                <strong>{{ leave.totalDays }}</strong>
+                <small>(Paid: {{ leave.paidDays }}, Unpaid: {{ leave.unpaidDays }})</small>
+              </div>
+            </td>
+            <td>
+              <span class="status-badge" [ngClass]="getStatusClass(leave.status)">
+                {{ leave.status }}
+              </span>
+            </td>
+            <td class="reason-cell">{{ leave.reason }}</td>
+            <td>
+              <div class="action-buttons">
+                <button 
+                  class="btn-small btn-edit" 
+                  [disabled]="!canEdit(leave)"
+                  (click)="openEditModal(leave)"
+                  [title]="canEdit(leave) ? 'Edit leave' : 'Only pending or rejected leaves can be edited'">
+                  <svg class="icon icon-sm" viewBox="0 0 24 24">
+                    <path d="M12 20h9"></path>
+                    <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5z"></path>
+                  </svg>
+                  Edit
+                </button>
+                <button
+                  class="btn-small btn-delete"
+                  [disabled]="!canDelete(leave)"
+                  (click)="openDeleteModal(leave)"
+                  [title]="canDelete(leave) ? 'Delete leave' : 'Only pending leaves can be deleted'">
+                  <svg class="icon icon-sm" viewBox="0 0 24 24">
+                    <line x1="18" y1="6" x2="6" y2="18"></line>
+                    <line x1="6" y1="6" x2="18" y2="18"></line>
+                  </svg>
+                  Delete
+                </button>
+              </div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ========================================== -->
+  <!-- ADMIN SECTION -->
+  <!-- ========================================== -->
+
+  <div *ngIf="isAdmin">
+    <!-- Pending Leaves -->
+    <div class="section-card admin-section">
+      <h2>
+        <svg class="icon icon-md" viewBox="0 0 24 24">
+          <circle cx="12" cy="12" r="10"></circle>
+          <polyline points="12 6 12 12 16 14"></polyline>
+        </svg>
+        Pending Leaves (Admin)
+      </h2>
+      
+      <div class="loading-state" *ngIf="loadingPendingLeaves">
+        <div class="spinner"></div>
+        <p>Loading pending leaves...</p>
+      </div>
+
+      <div *ngIf="!loadingPendingLeaves && pendingLeaves.length === 0" class="empty-state">
+        <div class="empty-icon">
+          <svg class="icon icon-lg" viewBox="0 0 24 24">
+            <polyline points="20 6 9 17 4 12"></polyline>
+          </svg>
+        </div>
+        <p>No pending leave requests</p>
+      </div>
+
+      <div class="table-responsive" *ngIf="!loadingPendingLeaves && pendingLeaves.length > 0">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Employee Name</th>
+              <th>Leave Type</th>
+              <th>Dates</th>
+              <th>Days</th>
+              <th>Reason</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let leave of pendingLeaves; trackBy: trackByLeaveId">
+              <td>
+                <strong>{{ leave.employeeName }}</strong>
+                <small class="emp-id">(EmpID: {{ leave.empId }})</small>
+              </td>
+              <td>{{ leave.leaveType }}</td>
+              <td>
+                <div class="date-range">
+                  {{ formatDate(leave.startDate) }} <br>
+                  <small>to {{ formatDate(leave.endDate) }}</small>
+                </div>
+              </td>
+              <td>
+                <div class="days-info">
+                  <strong>{{ leave.totalDays }}</strong>
+                  <small>(P: {{ leave.paidDays }}, U: {{ leave.unpaidDays }})</small>
+                </div>
+              </td>
+              <td class="reason-cell">{{ leave.reason }}</td>
+              <td>
+                <div class="action-buttons">
+                  <button class="btn-small btn-approve" (click)="openConfirmModal(leave, 'approve')">
+                    <svg class="icon icon-sm" viewBox="0 0 24 24">
+                      <polyline points="20 6 9 17 4 12"></polyline>
+                    </svg>
+                    Approve
+                  </button>
+                  <button class="btn-small btn-reject" (click)="openConfirmModal(leave, 'reject')">
+                    <svg class="icon icon-sm" viewBox="0 0 24 24">
+                      <line x1="18" y1="6" x2="6" y2="18"></line>
+                      <line x1="6" y1="6" x2="18" y2="18"></line>
+                    </svg>
+                    Reject
+                  </button>
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Processed Leaves -->
+    <div class="section-card admin-section">
+      <div class="section-header">
+        <h2>
+          <svg class="icon icon-md" viewBox="0 0 24 24">
+            <circle cx="12" cy="12" r="3"></circle>
+            <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33h0a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51h0a1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82v0a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+          </svg>
+          Processed Leaves (Admin)
+        </h2>
+      </div>
+      <div class="filter-group filter-sticky">
+          <label for="statusFilter">Status:</label>
+          <select id="statusFilter" [(ngModel)]="processedStatusFilter" (change)="onProcessedFilterChange()" class="form-control-small">
+            <option *ngFor="let status of processedStatusOptions" [value]="status">{{ status }}</option>
+          </select>
+
+          <label for="typeFilter" style="margin-left:12px;">Type:</label>
+          <select id="typeFilter" [(ngModel)]="processedLeaveType" (change)="onProcessedFilterChange()" class="form-control-small">
+            <option [ngValue]="undefined">All</option>
+            <option *ngFor="let type of leaveTypes" [value]="type">{{ type }}</option>
+          </select>
+
+          <label for="yearFilter" style="margin-left:12px;">Year:</label>
+          <input id="yearFilter" type="number" [(ngModel)]="processedYear" (change)="onProcessedFilterChange()" class="form-control-small" style="width:90px;" />
+
+          <label for="fromDate" style="margin-left:12px;">From:</label>
+          <input id="fromDate" type="date" [(ngModel)]="processedFromDate" (change)="onProcessedFilterChange()" class="form-control-small" />
+
+          <label for="toDate" style="margin-left:12px;">To:</label>
+          <input id="toDate" type="date" [(ngModel)]="processedToDate" (change)="onProcessedFilterChange()" class="form-control-small" />
+
+          <label for="empId" style="margin-left:12px;">EmpID:</label>
+          <input id="empId" type="number" [(ngModel)]="processedEmpId" (change)="onProcessedFilterChange()" class="form-control-small" style="width:100px;" />
+            <button type="button" class="btn-small btn-secondary" style="margin-left:8px;" (click)="processedStatusFilter='APPROVED'; processedLeaveType=undefined; processedYear=currentYear; processedFromDate=undefined; processedToDate=undefined; processedEmpId=undefined; onProcessedFilterChange()">Clear Filters</button>
+      </div>
+
+      <div class="loading-state" *ngIf="loadingProcessedLeaves">
+        <div class="spinner"></div>
+        <p>Loading processed leaves...</p>
+      </div>
+
+      <div *ngIf="!loadingProcessedLeaves && filteredProcessedLeaves.length === 0" class="empty-state">
+        <div class="empty-icon">
+          <svg class="icon icon-lg" viewBox="0 0 24 24">
+            <path d="M22 12H2"></path>
+            <path d="M5 12l3 3-3 3"></path>
+            <rect x="3" y="4" width="18" height="16" rx="2" ry="2"></rect>
+          </svg>
+        </div>
+        <p>No {{ processedStatusFilter.toLowerCase() }} leaves</p>
+      </div>
+
+      <div class="table-responsive" *ngIf="!loadingProcessedLeaves && filteredProcessedLeaves.length > 0">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Employee Name</th>
+              <th>Leave Type</th>
+              <th>Dates</th>
+              <th>Days</th>
+              <th>Status</th>
+              <th>Approved By</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let leave of filteredProcessedLeaves; trackBy: trackByLeaveId">
+              <td>
+                <strong>{{ leave.employeeName }}</strong>
+                <small class="emp-id">(EmpID: {{ leave.empId }})</small>
+              </td>
+              <td>{{ leave.leaveType }}</td>
+              <td>
+                <div class="date-range">
+                  {{ formatDate(leave.startDate) }} <br>
+                  <small>to {{ formatDate(leave.endDate) }}</small>
+                </div>
+              </td>
+              <td>
+                <div class="days-info">
+                  <strong>{{ leave.totalDays }}</strong>
+                  <small>(P: {{ leave.paidDays }}, U: {{ leave.unpaidDays }})</small>
+                </div>
+              </td>
+              <td>
+                <span class="status-badge" [ngClass]="getStatusClass(leave.status)">
+                  {{ leave.status }}
+                </span>
+              </td>
+              <td>{{ leave.approvedBy || '-' }}</td>
+              <td>
+                <button 
+                  class="btn-small btn-revoke" 
+                  [disabled]="!canRevoke(leave)"
+                  (click)="openConfirmModal(leave, 'revoke')"
+                  [title]="canRevoke(leave) ? 'Revoke this leave' : 'Cannot revoke: Must be approved and start date in future'">
+                  <svg class="icon icon-sm" viewBox="0 0 24 24">
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <line x1="4.93" y1="4.93" x2="19.07" y2="19.07"></line>
+                  </svg>
+                  Revoke
+                </button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+<!-- ========================================== -->
+<!-- EDIT MODAL -->
+<!-- ========================================== -->
+<div class="modal-overlay" *ngIf="showEditModal" (click)="closeEditModal()">
+  <div class="modal-content" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <h3>
+        <svg class="icon icon-md" viewBox="0 0 24 24">
+          <path d="M12 20h9"></path>
+          <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5z"></path>
+        </svg>
+        Edit Leave Application
+      </h3>
+      <button class="btn-close" (click)="closeEditModal()">✕</button>
+    </div>
+    <div class="modal-body">
+      <form [formGroup]="editLeaveForm" (ngSubmit)="onUpdateLeave()">
+        <div class="form-group">
+          <label for="editLeaveType">Leave Type <span class="required">*</span></label>
+          <select id="editLeaveType" formControlName="leaveType" class="form-control">
+            <option value="">-- Select Type --</option>
+            <option *ngFor="let type of leaveTypes" [value]="type">{{ type }}</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label for="editStartDate">Start Date <span class="required">*</span></label>
+          <input type="date" id="editStartDate" formControlName="startDate" class="form-control">
+        </div>
+
+        <div class="form-group">
+          <label for="editEndDate">End Date <span class="required">*</span></label>
+          <input type="date" id="editEndDate" formControlName="endDate" class="form-control">
+          <div class="error-text" *ngIf="editLeaveForm.errors?.['dateRangeInvalid'] && editLeaveForm.get('endDate')?.touched">
+            End date must be ≥ start date
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="editReason">Reason <span class="required">*</span></label>
+          <textarea id="editReason" formControlName="reason" rows="3" class="form-control"></textarea>
+        </div>
+
+        <div class="modal-actions">
+          <button type="submit" class="btn btn-primary" [disabled]="processingAction || editLeaveForm.invalid">
+            <span *ngIf="!processingAction">Update Leave</span>
+            <span *ngIf="processingAction">⏳ Updating...</span>
+          </button>
+          <button type="button" class="btn btn-secondary" (click)="closeEditModal()" [disabled]="processingAction">
+            Cancel
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- ========================================== -->
+<!-- CONFIRMATION MODAL -->
+<!-- ========================================== -->
+<div class="modal-overlay" *ngIf="showConfirmModal" (click)="closeConfirmModal()">
+  <div class="modal-content modal-confirm" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <h3>
+        <span *ngIf="confirmAction === 'approve'">
+          <svg class="icon icon-md" viewBox="0 0 24 24">
+            <polyline points="20 6 9 17 4 12"></polyline>
+          </svg>
+          Approve Leave
+        </span>
+        <span *ngIf="confirmAction === 'reject'">
+          <svg class="icon icon-md" viewBox="0 0 24 24">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+          Reject Leave
+        </span>
+        <span *ngIf="confirmAction === 'revoke'">
+          <svg class="icon icon-md" viewBox="0 0 24 24">
+            <circle cx="12" cy="12" r="10"></circle>
+            <line x1="4.93" y1="4.93" x2="19.07" y2="19.07"></line>
+          </svg>
+          Revoke Leave
+        </span>
+      </h3>
+      <button class="btn-close" (click)="closeConfirmModal()">✕</button>
+    </div>
+    <div class="modal-body">
+      <p><strong>Are you sure you want to {{ confirmAction }} this leave request?</strong></p>
+      <div class="leave-details" *ngIf="selectedLeaveForAction">
+        <p><strong>Employee:</strong> {{ selectedLeaveForAction.employeeName }}</p>
+        <p><strong>Leave Type:</strong> {{ selectedLeaveForAction.leaveType }}</p>
+        <p><strong>Duration:</strong> {{ formatDate(selectedLeaveForAction.startDate) }} to {{ formatDate(selectedLeaveForAction.endDate) }}</p>
+        <p><strong>Total Days:</strong> {{ selectedLeaveForAction.totalDays }}</p>
+        <p><strong>Reason:</strong> {{ selectedLeaveForAction.reason }}</p>
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-primary" (click)="confirmActionHandler()" [disabled]="processingAction">
+        <span *ngIf="!processingAction">Yes, {{ confirmAction }}</span>
+        <span *ngIf="processingAction">⏳ Processing...</span>
+      </button>
+      <button class="btn btn-secondary" (click)="closeConfirmModal()" [disabled]="processingAction">
+        Cancel
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ========================================== -->
+<!-- DELETE CONFIRMATION MODAL -->
+<!-- ========================================== -->
+<div class="modal-overlay" *ngIf="showDeleteModal" (click)="closeDeleteModal()">
+  <div class="modal-content modal-confirm" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <h3>
+        <svg class="icon icon-md" viewBox="0 0 24 24">
+          <line x1="18" y1="6" x2="6" y2="18"></line>
+          <line x1="6" y1="6" x2="18" y2="18"></line>
+        </svg>
+        Delete Leave
+      </h3>
+      <button class="btn-close" (click)="closeDeleteModal()">✕</button>
+    </div>
+    <div class="modal-body">
+      <p><strong>Are you sure you want to delete this leave request?</strong></p>
+      <div class="leave-details" *ngIf="selectedLeaveToDelete">
+        <p><strong>Leave Type:</strong> {{ selectedLeaveToDelete.leaveType }}</p>
+        <p><strong>Duration:</strong> {{ formatDate(selectedLeaveToDelete.startDate) }} to {{ formatDate(selectedLeaveToDelete.endDate) }}</p>
+        <p><strong>Total Days:</strong> {{ selectedLeaveToDelete.totalDays }}</p>
+        <p><strong>Reason:</strong> {{ selectedLeaveToDelete.reason }}</p>
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-primary" (click)="confirmDelete()" [disabled]="loading">
+        <span *ngIf="!loading">Yes, Delete</span>
+        <span *ngIf="loading">⏳ Deleting...</span>
+      </button>
+      <button class="btn btn-secondary" (click)="closeDeleteModal()" [disabled]="loading">Cancel</button>
+    </div>
+  </div>
+  </div>
+
+<!-- Close the main container -->
+</div>

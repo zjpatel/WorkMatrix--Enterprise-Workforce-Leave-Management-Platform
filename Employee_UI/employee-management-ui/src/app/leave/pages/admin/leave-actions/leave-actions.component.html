@@ -1,0 +1,141 @@
+<div class="leave-actions-container">
+  <div class="page-header">
+    <div>
+      <h1>🔧 Leave Actions</h1>
+      <p>Manage approved leaves and revoke if needed</p>
+    </div>
+    <button class="btn btn-secondary" (click)="loadAllLeaves()" [disabled]="loading">
+      🔄 Refresh
+    </button>
+  </div>
+
+  <!-- Filter Section -->
+  <div class="filter-section">
+    <label for="statusFilter">Filter by Status:</label>
+    <select id="statusFilter" [(ngModel)]="selectedStatus" (change)="onStatusFilterChange()" class="filter-select">
+      <option *ngFor="let status of statusOptions" [value]="status">
+        {{ status }}
+      </option>
+    </select>
+    <p class="info-text">⚠️ Note: Use "Pending Leaves" page to approve/reject pending requests. This page is for managing already processed leaves.</p>
+  </div>
+
+  <!-- Success Message -->
+  <div class="alert alert-success" *ngIf="successMessage">
+    {{ successMessage }}
+  </div>
+
+  <!-- Error Message -->
+  <div class="alert alert-error" *ngIf="errorMessage && !loading">
+    {{ errorMessage }}
+  </div>
+
+  <!-- Loading State -->
+  <div class="loading-container" *ngIf="loading">
+    <div class="spinner"></div>
+    <p>Loading leaves...</p>
+  </div>
+
+  <!-- Leaves Table -->
+  <div class="table-card" *ngIf="!loading">
+    <div class="table-responsive" *ngIf="filteredLeaves.length > 0">
+      <table class="leaves-table">
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Employee Name</th>
+            <th>Emp ID</th>
+            <th>Leave Type</th>
+            <th>Start Date</th>
+            <th>End Date</th>
+            <th>Total Days</th>
+            <th>Status</th>
+            <th>Approved By</th>
+            <th>Approved At</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let leave of filteredLeaves">
+            <td>{{ leave.leaveId }}</td>
+            <td>
+              <div class="employee-info">
+                <strong>{{ leave.employeeName }}</strong>
+              </div>
+            </td>
+            <td>{{ leave.empId }}</td>
+            <td>{{ leave.leaveType.replace('_', ' ') }}</td>
+            <td>{{ formatDate(leave.startDate) }}</td>
+            <td>{{ formatDate(leave.endDate) }}</td>
+            <td>
+              <div class="days-info">
+                <span class="total-days">{{ leave.totalDays }} total</span>
+                <span class="paid-days">(P: {{ leave.paidDays }}, U: {{ leave.unpaidDays }})</span>
+              </div>
+            </td>
+            <td>
+              <span class="status-badge" [ngClass]="getStatusClass(leave.status)">
+                {{ leave.status }}
+              </span>
+            </td>
+            <td>{{ leave.approvedBy || '-' }}</td>
+            <td>{{ leave.approvedAt ? formatDate(leave.approvedAt) : '-' }}</td>
+            <td>
+              <div class="action-buttons">
+                <button 
+                  class="btn-revoke" 
+                  [disabled]="!canRevoke(leave)"
+                  (click)="openRevokeModal(leave)"
+                  [title]="canRevoke(leave) ? 'Revoke this leave' : 'Cannot revoke: Must be approved and start date in future'">
+                  🚫 Revoke
+                </button>
+              </div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Empty State -->
+    <div class="empty-state" *ngIf="filteredLeaves.length === 0">
+      <div class="empty-icon">📭</div>
+      <h3>No Leaves Found</h3>
+      <p>No leaves match the selected filter.</p>
+    </div>
+  </div>
+</div>
+
+<!-- Confirmation Modal -->
+<div class="modal-overlay" *ngIf="showConfirmModal" (click)="closeConfirmModal()">
+  <div class="modal-content" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <h2>🚫 Revoke Leave</h2>
+    </div>
+    <div class="modal-body">
+      <p><strong>Are you sure you want to revoke this approved leave?</strong></p>
+      <p class="warning-text">⚠️ This action will cancel the employee's approved leave.</p>
+      <div class="leave-details" *ngIf="selectedLeave">
+        <p><strong>Employee:</strong> {{ selectedLeave.employeeName }}</p>
+        <p><strong>Leave Type:</strong> {{ selectedLeave.leaveType.replace('_', ' ') }}</p>
+        <p><strong>Duration:</strong> {{ formatDate(selectedLeave.startDate) }} to {{ formatDate(selectedLeave.endDate) }}</p>
+        <p><strong>Total Days:</strong> {{ selectedLeave.totalDays }}</p>
+        <p><strong>Status:</strong> {{ selectedLeave.status }}</p>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button 
+        class="btn btn-danger" 
+        (click)="confirmRevoke()" 
+        [disabled]="processingAction">
+        <span *ngIf="!processingAction">Yes, Revoke</span>
+        <span *ngIf="processingAction">Revoking...</span>
+      </button>
+      <button 
+        class="btn btn-secondary" 
+        (click)="closeConfirmModal()" 
+        [disabled]="processingAction">
+        Cancel
+      </button>
+    </div>
+  </div>
+</div>

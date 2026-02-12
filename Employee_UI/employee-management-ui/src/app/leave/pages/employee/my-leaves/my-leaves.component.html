@@ -1,0 +1,96 @@
+<div class="my-leaves-container">
+  <div class="page-header">
+    <h1>
+      <svg class="icon icon-md" viewBox="0 0 24 24">
+        <line x1="8" y1="6" x2="21" y2="6"></line>
+        <line x1="8" y1="12" x2="21" y2="12"></line>
+        <line x1="8" y1="18" x2="21" y2="18"></line>
+        <line x1="3" y1="6" x2="3.01" y2="6"></line>
+        <line x1="3" y1="12" x2="3.01" y2="12"></line>
+        <line x1="3" y1="18" x2="3.01" y2="18"></line>
+      </svg>
+      My Leave Applications
+    </h1>
+    <a routerLink="/leave/apply" class="btn btn-primary">+ Apply New Leave</a>
+  </div>
+
+  <!-- Loading State -->
+  <div class="loading-container" *ngIf="loading">
+    <div class="spinner"></div>
+    <p>Loading your leaves...</p>
+  </div>
+
+  <!-- Error Message -->
+  <div class="alert alert-error" *ngIf="errorMessage && !loading">
+    {{ errorMessage }}
+  </div>
+
+  <!-- Leaves Table -->
+  <div class="table-card" *ngIf="!loading && !errorMessage">
+    <div class="table-responsive" *ngIf="leaves.length > 0">
+      <table class="leaves-table">
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Leave Type</th>
+            <th>Start Date</th>
+            <th>End Date</th>
+            <th>Total Days</th>
+            <th>Status</th>
+            <th>Applied At</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let leave of leaves">
+            <td>{{ leave.leaveId }}</td>
+            <td>{{ leave.leaveType.replace('_', ' ') }}</td>
+            <td>{{ formatDate(leave.startDate) }}</td>
+            <td>{{ formatDate(leave.endDate) }}</td>
+            <td>
+              <div class="days-info">
+                <span class="total-days">{{ leave.totalDays }} total</span>
+                <span class="paid-days">({{ leave.paidDays }} paid, {{ leave.unpaidDays }} unpaid)</span>
+              </div>
+            </td>
+            <td>
+              <span class="status-badge" [ngClass]="getStatusClass(leave.status)">
+                {{ leave.status }}
+              </span>
+            </td>
+            <td>{{ formatDate(leave.appliedAt) }}</td>
+            <td>
+              <div class="action-buttons">
+                <button 
+                  class="btn-edit" 
+                  [disabled]="!canEdit(leave)"
+                  (click)="editLeave(leave.leaveId)"
+                  [title]="canEdit(leave) ? 'Edit leave' : 'Only pending leaves can be edited'">
+                  <svg class="icon icon-sm" viewBox="0 0 24 24">
+                    <path d="M12 20h9"></path>
+                    <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5z"></path>
+                  </svg>
+                  Edit
+                </button>
+              </div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Empty State -->
+    <div class="empty-state" *ngIf="leaves.length === 0">
+        <div class="empty-icon">
+          <svg class="icon icon-lg" viewBox="0 0 24 24">
+            <path d="M22 12H2"></path>
+            <path d="M5 12l3 3-3 3"></path>
+            <rect x="3" y="4" width="18" height="16" rx="2" ry="2"></rect>
+          </svg>
+        </div>
+      <h3>No Leave Applications</h3>
+      <p>You haven't applied for any leaves yet.</p>
+      <a routerLink="/leave/apply" class="btn btn-primary">Apply for Leave</a>
+    </div>
+  </div>
+</div>

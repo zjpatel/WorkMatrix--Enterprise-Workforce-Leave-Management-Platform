@@ -1,0 +1,112 @@
+<div class="department-container">
+  <!-- Header -->
+  <header class="page-header">
+    <div>
+      <h1 class="page-title">
+        <svg class="icon icon-md" viewBox="0 0 24 24">
+          <rect x="4" y="2" width="16" height="20" rx="2" ry="2"></rect>
+          <path d="M9 6h6M9 10h6M9 14h6M9 18h6"></path>
+        </svg>
+        Departments
+      </h1>
+      <p class="page-subtitle">Manage your organization structure</p>
+    </div>
+    <button (click)="openCreateModal()" class="btn-primary">
+      <svg class="icon icon-sm" viewBox="0 0 24 24">
+        <line x1="12" y1="5" x2="12" y2="19"></line>
+        <line x1="5" y1="12" x2="19" y2="12"></line>
+      </svg>
+      New Department
+    </button>
+  </header>
+
+  <!-- Error Message -->
+  <div *ngIf="error" class="error-banner">
+    {{ error }}
+  </div>
+
+  <!-- Success Message -->
+  <div *ngIf="success" class="success-banner">
+    {{ success }}
+  </div>
+
+  <!-- Loading State -->
+  <div *ngIf="loading" class="loading-state">
+    <div class="spinner"></div>
+    <p>Loading departments...</p>
+  </div>
+
+  <!-- Empty State -->
+  <div *ngIf="!loading && departments.length === 0" class="empty-state">
+    <div class="empty-icon">
+      <svg class="icon icon-lg" viewBox="0 0 24 24">
+        <rect x="4" y="2" width="16" height="20" rx="2" ry="2"></rect>
+        <path d="M9 6h6M9 10h6M9 14h6M9 18h6"></path>
+      </svg>
+    </div>
+    <h2>No departments yet</h2>
+    <p>Create your first department to get started</p>
+  </div>
+
+  <!-- Departments Grid -->
+  <div *ngIf="!loading && departments.length > 0" class="departments-grid">
+    <div *ngFor="let dept of departments" class="dept-card">
+      <div class="dept-header">
+        <h3>{{ dept.deptName }}</h3>
+        <span class="dept-id">ID: {{ dept.deptId }}</span>
+      </div>
+      <div class="dept-actions">
+        <button
+          (click)="deleteDepartment(dept.deptId, dept.deptName)"
+          [disabled]="deleteConfirmId === dept.deptId"
+          class="btn-danger"
+        >
+          <svg class="icon icon-sm" viewBox="0 0 24 24">
+            <polyline points="3 6 5 6 21 6"></polyline>
+            <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"></path>
+            <path d="M10 11v6"></path>
+            <path d="M14 11v6"></path>
+            <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"></path>
+          </svg>
+          {{ deleteConfirmId === dept.deptId ? 'Deleting...' : 'Delete' }}
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Create Modal -->
+<div *ngIf="showCreateModal" class="modal-backdrop" (click)="closeCreateModal()"></div>
+<div *ngIf="showCreateModal" class="modal-content create-modal">
+  <div class="modal-header">
+    <h2>Create New Department</h2>
+    <button class="close-btn" (click)="closeCreateModal()">✕</button>
+  </div>
+
+  <div class="modal-body">
+    <div *ngIf="createError" class="error-banner">
+      {{ createError }}
+    </div>
+
+    <div class="form-group">
+      <label>Department Name *</label>
+      <input
+        type="text"
+        [(ngModel)]="newDeptName"
+        placeholder="e.g., Engineering, Marketing, HR"
+        class="form-input"
+        (keydown.enter)="createDepartment()"
+      />
+    </div>
+  </div>
+
+  <div class="modal-footer">
+    <button (click)="closeCreateModal()" class="btn-secondary">Cancel</button>
+    <button (click)="createDepartment()" [disabled]="createLoading" class="btn-primary">
+      <svg class="icon icon-sm" viewBox="0 0 24 24">
+        <polyline points="20 6 9 17 4 12"></polyline>
+      </svg>
+      {{ createLoading ? 'Creating...' : 'Create' }}
+    </button>
+  </div>
+</div>

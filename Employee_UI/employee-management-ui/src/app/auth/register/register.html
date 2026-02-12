@@ -1,0 +1,131 @@
+<div class="register-container">
+  <div class="register-card">
+    <div class="register-header">
+      <h1>Create Account</h1>
+      <p>Join us today</p>
+    </div>
+
+    <!-- Success Message -->
+    <div *ngIf="success" class="success-alert">
+      {{ success }}
+    </div>
+
+    <!-- Error Alert -->
+    <div *ngIf="error || errorMessages.length" class="error-alert">
+      <span *ngIf="error && !errorMessages.length">{{ error }}</span>
+      <ul *ngIf="errorMessages.length" class="error-list">
+        <li *ngFor="let msg of errorMessages">{{ msg }}</li>
+      </ul>
+    </div>
+
+    <form [formGroup]="form" (ngSubmit)="register()" class="register-form">
+      <!-- Name -->
+      <div class="form-group">
+        <label>Full Name *</label>
+        <input
+          type="text"
+          placeholder="John Doe"
+          formControlName="name"
+          required
+          class="form-input"
+        />
+      </div>
+
+      <!-- Email -->
+      <div class="form-group">
+        <label>Email Address *</label>
+        <input
+          type="email"
+          placeholder="you@example.com"
+          formControlName="email"
+          required
+          class="form-input"
+        />
+      </div>
+
+      <!-- Age -->
+      <div class="form-group">
+        <label>Age *</label>
+        <input
+          type="number"
+          placeholder="25"
+          formControlName="age"
+          min="18"
+          max="120"
+          required
+          class="form-input"
+        />
+      </div>
+
+      <!-- Gender -->
+      <div class="form-group">
+        <label>Gender *</label>
+        <select formControlName="gender" required class="form-input">
+          <option value="">Select your gender</option>
+          <option value="Male">Male</option>
+          <option value="Female">Female</option>
+          <option value="Other">Other</option>
+        </select>
+      </div>
+
+      <!-- Password -->
+      <div class="form-group">
+        <label>Password *</label>
+        <input
+          type="password"
+          placeholder="At least 6 characters"
+          formControlName="password"
+          required
+          class="form-input"
+        />
+      </div>
+
+      <!-- Confirm Password -->
+      <div class="form-group" [class.error]="passwordMismatch">
+        <label>Confirm Password *</label>
+        <input
+          type="password"
+          placeholder="Confirm your password"
+          formControlName="confirmPassword"
+          required
+          class="form-input"
+        />
+      </div>
+
+      <!-- Profile Image -->
+      <div class="form-group">
+        <label>Profile Picture (Optional)</label>
+        <p class="form-hint">Images will be uploaded after admin approval</p>
+        <div class="file-input-wrapper">
+          <input
+            type="file"
+            accept="image/*"
+            (change)="onFileChange($event)"
+            class="file-input"
+            id="imageInput"
+          />
+          <label for="imageInput" class="file-label">
+            <span>📸 Choose image</span>
+          </label>
+        </div>
+        <div *ngIf="imagePreview" class="image-preview">
+          <img [src]="imagePreview" alt="preview" />
+          <button type="button" (click)="imageFile = undefined; imagePreview = null" class="btn-remove">
+            ✕
+          </button>
+        </div>
+      </div>
+
+      <!-- Submit Button -->
+      <button type="submit" [disabled]="loading" class="btn-primary">
+        {{ loading ? 'Creating account...' : 'Create Account' }}
+      </button>
+    </form>
+
+    <!-- Login Link -->
+    <p class="login-link">
+      Already have an account?
+      <a routerLink="/login">Sign in</a>
+    </p>
+  </div>
+</div>
