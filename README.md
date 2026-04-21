@@ -1,13 +1,13 @@
-# 🚀 WorkSphere – Enterprise Workforce & Leave Management Platform
+# 🚀 WorkMatrix – Enterprise Workforce & Leave Management Platform
 
-WorkSphere is a full-stack enterprise-grade workforce management system built using Spring Boot, PostgreSQL, JWT Security, and Angular.  
+WorkMatrix is a full-stack enterprise-grade workforce management system built using Spring Boot, PostgreSQL, JWT Security, and Angular.  
 It provides secure employee lifecycle management, approval-based authentication workflow, role-based authorization, holiday management, and advanced leave management with business rule enforcement.
 
 ---
 
 ## 🏢 Project Overview
 
-WorkSphere is designed to simulate a real-world HRMS (Human Resource Management System) with:
+WorkMatrix is designed to simulate a real-world HRMS (Human Resource Management System) with:
 
 - Secure authentication & authorization
 - Employee & department management
